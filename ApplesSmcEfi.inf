@@ -1,0 +1,49 @@
+## @file
+#  Apple SMC Fan Control UEFI Application
+#
+#  Provides direct SMC fan control from UEFI environment
+#  before the operating system loads.
+#
+#  Copyright (c) 2026, Apple SMC Fan Control Project
+#  SPDX-License-Identifier: MIT
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ApplesSmcEfi
+  FILE_GUID                      = 8F7D4F3E-2B1A-4C5D-9E8F-1A2B3C4D5E6F
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UefiMain
+
+[Sources]
+  src/main.c
+  src/smc_protocol.c
+  src/fan_control.c
+  src/temp_sensors.c
+  src/ui_menu.c
+  src/utils.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  PrintLib
+  IoLib
+
+[Protocols]
+  gEfiSimpleTextInProtocolGuid
+  gEfiSimpleTextOutProtocolGuid
+
+[Guids]
+
+[BuildOptions]
+  GCC:*_*_*_CC_FLAGS = -Wall -Wextra -std=c11 -O2
+  MSFT:*_*_*_CC_FLAGS = /W4 /O2

@@ -17,7 +17,7 @@ OBJCOPY         = objcopy
 
 CFLAGS          = -I$(EFIINC) -I$(EFIINCARCH) -fno-stack-protector \
                   -fpic -fshort-wchar -mno-red-zone -Wall -Wextra \
-                  -DEFI_FUNCTION_WRAPPER -std=c11 -O2
+                  -DEFI_FUNCTION_WRAPPER -D_GNU_EFI -std=c11 -O2
 
 LDFLAGS         = -nostdlib -znocombreloc -T $(LDSCRIPT) -shared \
                   -Bsymbolic -L$(EFILIB) $(EFICRT0)

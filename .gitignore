@@ -2,6 +2,11 @@
 *.o
 *.so
 *.efi
+ApplesSmcEfi.efi
+
+# EDK2 build artifacts
+Build/
+Conf/
 
 # Test environment
 test_env/

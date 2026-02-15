@@ -32,12 +32,23 @@ This has been tested on:
 
 ### Build Dependencies
 
+This project supports two build systems:
+
+#### Option 1: gnu-efi (Recommended for most users)
 - **Arch Linux** (or similar distribution)
 - **gnu-efi**: UEFI development headers and libraries
 - **GCC**: C compiler
 - **GNU binutils**: Linker and object tools
 
+#### Option 2: EDK2/TianoCore
+- **EDK2**: Official UEFI development environment
+- **Python 3**: EDK2 build tools requirement
+- **NASM**: Assembler
+- **IASL**: ACPI compiler
+
 ### Installation
+
+#### Using gnu-efi (Simple and Fast)
 
 ```bash
 # Install gnu-efi
@@ -52,7 +63,18 @@ cd applesmc-efi
 make
 ```
 
+#### Using EDK2/TianoCore
+
+See [BUILD_EDK2.md](BUILD_EDK2.md) for detailed EDK2 build instructions.
+
+```bash
+# Quick start (if EDK2 already installed)
+./build_edk2.sh RELEASE
+```
+
 ## Building
+
+### With gnu-efi (Makefile)
 
 ```bash
 # Build the EFI application
@@ -68,7 +90,29 @@ make install
 make help
 ```
 
-The build process produces `applesmc.efi` - a PE32+ executable for EFI.
+### With EDK2/TianoCore
+
+```bash
+# Release build (optimized)
+./build_edk2.sh RELEASE
+
+# Debug build
+./build_edk2.sh DEBUG
+```
+
+Both build methods produce `applesmc.efi` or `ApplesSmcEfi.efi` - a PE32+ executable for EFI.
+
+### Build System Comparison
+
+| Feature | gnu-efi | EDK2 |
+|---------|---------|------|
+| Setup Complexity | Simple | Complex |
+| Build Speed | Fast | Slower |
+| Binary Size | ~76 KB | Larger |
+| Dependencies | Minimal | Many |
+| Best For | Quick development | Enterprise/OEM |
+
+**Recommendation**: Use **gnu-efi** unless you specifically need EDK2 integration.
 
 ## Installation
 

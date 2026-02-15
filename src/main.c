@@ -1,5 +1,16 @@
-#include <efi.h>
-#include <efilib.h>
+// Support both gnu-efi and EDK2/TianoCore build systems
+#ifdef _GNU_EFI
+  // gnu-efi headers
+  #include <efi.h>
+  #include <efilib.h>
+#else
+  // EDK2/TianoCore headers
+  #include <Uefi.h>
+  #include <Library/UefiLib.h>
+  #include <Library/UefiBootServicesTableLib.h>
+  #include <Library/BaseMemoryLib.h>
+  #include <Library/MemoryAllocationLib.h>
+#endif
 
 #include "smc_protocol.h"
 #include "fan_control.h"
@@ -15,8 +26,14 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     FAN_INFO fans[MAX_FANS];
     UINT8 fan_count = 0;
 
+#ifdef _GNU_EFI
     // Initialize gnu-efi library
     InitializeLib(ImageHandle, SystemTable);
+#else
+    // EDK2 doesn't need explicit initialization
+    (void)ImageHandle;
+    (void)SystemTable;
+#endif
 
     // Clear screen and display banner
     gST->ConOut->ClearScreen(gST->ConOut);
@@ -118,3 +135,19 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 
     return EFI_SUCCESS;
 }
+
+#ifndef _GNU_EFI
+/**
+ * EDK2/TianoCore Entry Point Wrapper
+ * EDK2 expects UefiMain as the entry point
+ */
+EFI_STATUS
+EFIAPI
+UefiMain(
+    IN EFI_HANDLE        ImageHandle,
+    IN EFI_SYSTEM_TABLE  *SystemTable
+    )
+{
+    return efi_main(ImageHandle, SystemTable);
+}
+#endif
