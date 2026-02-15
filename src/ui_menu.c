@@ -139,10 +139,11 @@ static void display_temp_sensors(TEMP_SENSOR sensors[], UINT8 count, INT8 select
         }
 
         temp_format_display(sensors[i].temperature, temp_str, sizeof(temp_str));
-        Print(L"[%2d] %-4s - %-30s: %s\n",
+        // Display format: "Description (KEY): Temperature"
+        Print(L"[%2d] %-30s (%-4s): %s\n",
               i,
-              sensors[i].key,
               sensors[i].label,
+              sensors[i].key,
               temp_str);
     }
 
@@ -299,8 +300,8 @@ void ui_menu_run(FAN_INFO fans[], UINT8 count) {
                     if (sensor_count > 0) {
                         fans[selected_fan].sensor_index = (fans[selected_fan].sensor_index + 1) % sensor_count;
                         UnicodeSPrint(status_msg, sizeof(status_msg), L"Sensor: %s (%s)",
-                                     sensors[fans[selected_fan].sensor_index].key,
-                                     sensors[fans[selected_fan].sensor_index].label);
+                                     sensors[fans[selected_fan].sensor_index].label,
+                                     sensors[fans[selected_fan].sensor_index].key);
                     }
                 } else {
                     UnicodeSPrint(status_msg, sizeof(status_msg), L"Fan must be in MANUAL or SENSOR mode");
@@ -335,8 +336,8 @@ void ui_menu_run(FAN_INFO fans[], UINT8 count) {
                             fans[selected_fan].sensor_index--;
                         }
                         UnicodeSPrint(status_msg, sizeof(status_msg), L"Sensor: %s (%s)",
-                                     sensors[fans[selected_fan].sensor_index].key,
-                                     sensors[fans[selected_fan].sensor_index].label);
+                                     sensors[fans[selected_fan].sensor_index].label,
+                                     sensors[fans[selected_fan].sensor_index].key);
                     }
                 } else {
                     UnicodeSPrint(status_msg, sizeof(status_msg), L"Fan must be in MANUAL or SENSOR mode");
