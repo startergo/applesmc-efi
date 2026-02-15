@@ -1,0 +1,16 @@
+# Build artifacts
+*.o
+*.so
+*.efi
+
+# Test environment
+test_env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
