@@ -41,6 +41,18 @@ if [ ! -f "$EDK2_PATH/BaseTools/Source/C/bin/GenFw" ]; then
     exit 1
 fi
 
+# Check if NASM is installed (required for EDK2)
+if ! command -v nasm &> /dev/null; then
+    echo "Error: NASM assembler not found"
+    echo ""
+    echo "NASM is required for EDK2 builds."
+    echo "To install:"
+    echo "  sudo pacman -S nasm     # Arch Linux"
+    echo "  sudo apt install nasm   # Ubuntu/Debian"
+    echo ""
+    exit 1
+fi
+
 # Source EDK2 environment
 echo "Setting up EDK2 environment..."
 cd "$EDK2_PATH"
@@ -83,6 +95,9 @@ fi
 echo ""
 echo "Building $BUILD_TYPE configuration..."
 echo ""
+
+# Disable -Werror for GCC builds (workaround for newer GCC implicit-fallthrough warnings)
+export GCC5_X64_CC_FLAGS="-Wno-error"
 
 # Build
 build -a X64 -t GCC5 -p "$PROJECT_NAME/ApplesSmcEfi.dsc" -b "$BUILD_TYPE"

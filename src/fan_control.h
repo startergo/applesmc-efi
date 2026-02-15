@@ -1,8 +1,14 @@
 #ifndef FAN_CONTROL_H
 #define FAN_CONTROL_H
 
-#include <efi.h>
-#include <efilib.h>
+// Support both gnu-efi and EDK2/TianoCore build systems
+#ifdef _GNU_EFI
+  #include <efi.h>
+  #include <efilib.h>
+#else
+  #include <Uefi.h>
+  #include <Library/UefiLib.h>
+#endif
 
 // Maximum number of fans supported
 #define MAX_FANS 6

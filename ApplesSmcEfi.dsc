@@ -46,8 +46,9 @@
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
 
   #
-  # Additional Libraries
+  # Security and Compiler Support Libraries
   #
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
   RegisterFilterLib|MdePkg/Library/RegisterFilterLibNull/RegisterFilterLibNull.inf
 
 [LibraryClasses.common.UEFI_APPLICATION]
@@ -57,5 +58,5 @@
   ApplesSmcEfiPkg/ApplesSmcEfi.inf
 
 [BuildOptions]
-  GCC:*_*_*_CC_FLAGS = -Wall -Wextra -std=c11 -Wno-unused-parameter
+  GCC:*_*_*_CC_FLAGS = -Wall -Wextra -std=c11 -Wno-unused-parameter -Wno-implicit-fallthrough
   MSFT:*_*_*_CC_FLAGS = /W4 /wd4100

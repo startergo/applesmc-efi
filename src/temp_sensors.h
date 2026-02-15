@@ -1,8 +1,15 @@
 #ifndef TEMP_SENSORS_H
 #define TEMP_SENSORS_H
 
-#include <efi.h>
-#include <efilib.h>
+// Support both gnu-efi and EDK2/TianoCore build systems
+#ifdef _GNU_EFI
+  #include <efi.h>
+  #include <efilib.h>
+#else
+  #include <Uefi.h>
+  #include <Library/UefiLib.h>
+  #include <Library/PrintLib.h>
+#endif
 
 // Maximum number of temperature sensors
 #define MAX_TEMP_SENSORS 68
