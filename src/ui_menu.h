@@ -4,6 +4,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include "fan_control.h"
+#include "temp_sensors.h"
 
 /**
  * UI display functions

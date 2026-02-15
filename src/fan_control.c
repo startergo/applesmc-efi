@@ -99,7 +99,7 @@ EFI_STATUS fan_read_min_max(UINT8 fan_index, UINT16 *min_rpm, UINT16 *max_rpm) {
 }
 
 /**
- * Check if fan is in manual mode
+ * Check if fan is in manual mode (at SMC level)
  */
 EFI_STATUS fan_get_mode(UINT8 fan_index, BOOLEAN *is_manual) {
     CHAR8 key[4];
@@ -128,6 +128,96 @@ EFI_STATUS fan_get_mode(UINT8 fan_index, BOOLEAN *is_manual) {
     *is_manual = (data[0] != 0);
 
     return EFI_SUCCESS;
+}
+
+/**
+ * Calculate target RPM based on temperature and thresholds
+ * Uses linear interpolation between min_temp and max_temp
+ */
+UINT16 fan_calculate_rpm_from_temp(INT16 current_temp, INT16 min_temp, INT16 max_temp,
+                                    UINT16 min_rpm, UINT16 max_rpm) {
+    // Ensure min < max
+    if (min_temp >= max_temp) {
+        return min_rpm;  // Safe fallback
+    }
+
+    // If below minimum temperature, use minimum RPM
+    if (current_temp <= min_temp) {
+        return min_rpm;
+    }
+
+    // If above maximum temperature, use maximum RPM
+    if (current_temp >= max_temp) {
+        return max_rpm;
+    }
+
+    // Linear interpolation between min and max
+    // temp_ratio = (current - min) / (max - min)
+    // target_rpm = min_rpm + temp_ratio * (max_rpm - min_rpm)
+    INT32 temp_range = max_temp - min_temp;
+    INT32 temp_offset = current_temp - min_temp;
+    INT32 rpm_range = max_rpm - min_rpm;
+
+    UINT16 target_rpm = min_rpm + (UINT16)((temp_offset * rpm_range) / temp_range);
+
+    // Clamp to safe range (safety check)
+    return clamp_rpm(target_rpm, min_rpm, max_rpm);
+}
+
+/**
+ * Enable/disable sensor-based control for a fan
+ */
+EFI_STATUS fan_set_sensor_based_mode(UINT8 fan_index, BOOLEAN enable,
+                                     UINT8 sensor_index, INT16 min_temp, INT16 max_temp) {
+    EFI_STATUS status;
+
+    if (fan_index >= MAX_FANS) {
+        return EFI_INVALID_PARAMETER;
+    }
+
+    if (enable) {
+        // Enable manual mode at SMC level (sensor-based uses manual control)
+        status = fan_set_manual_mode(fan_index, TRUE);
+        if (EFI_ERROR(status)) {
+            return status;
+        }
+        // Sensor index and temp thresholds are stored in FAN_INFO by caller
+    } else {
+        // Disable - return to automatic mode
+        status = fan_set_manual_mode(fan_index, FALSE);
+        if (EFI_ERROR(status)) {
+            return status;
+        }
+    }
+
+    return EFI_SUCCESS;
+}
+
+/**
+ * Update fan speed based on current temperature
+ * Call this periodically for fans in sensor-based mode
+ */
+EFI_STATUS fan_update_sensor_based(FAN_INFO *fan, INT16 current_temp) {
+    UINT16 target_rpm;
+
+    if (!fan) {
+        return EFI_INVALID_PARAMETER;
+    }
+
+    if (!fan->sensor_based_enabled) {
+        return EFI_SUCCESS;  // Not in sensor-based mode
+    }
+
+    // Calculate target RPM based on temperature
+    target_rpm = fan_calculate_rpm_from_temp(current_temp,
+                                             fan->min_temp,
+                                             fan->max_temp,
+                                             fan->min_rpm,
+                                             fan->max_rpm);
+
+    // Set the target RPM
+    fan->target_rpm = target_rpm;
+    return fan_set_target_rpm(fan->index, target_rpm);
 }
 
 /**
@@ -222,14 +312,24 @@ EFI_STATUS fan_discover_all(FAN_INFO fans[], UINT8 *count) {
             fans[fan_count].max_rpm = 5200;
         }
 
-        // Read mode
-        status = fan_get_mode(i, &fans[fan_count].is_manual);
+        // Read SMC mode
+        BOOLEAN smc_manual = FALSE;
+        status = fan_get_mode(i, &smc_manual);
         if (EFI_ERROR(status)) {
-            fans[fan_count].is_manual = FALSE;
+            smc_manual = FALSE;
         }
+
+        // Set mode (default to auto)
+        fans[fan_count].mode = smc_manual ? FAN_MODE_MANUAL : FAN_MODE_AUTO;
 
         // Target RPM (same as current for now)
         fans[fan_count].target_rpm = rpm;
+
+        // Initialize sensor-based settings
+        fans[fan_count].sensor_based_enabled = FALSE;
+        fans[fan_count].sensor_index = 0;
+        fans[fan_count].min_temp = 400;  // 40.0°C
+        fans[fan_count].max_temp = 800;  // 80.0°C
 
         fan_count++;
     }

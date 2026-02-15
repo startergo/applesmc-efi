@@ -9,7 +9,7 @@ EFIINC          = /usr/include/efi
 EFIINCARCH      = $(EFIINC)/$(ARCH)
 
 TARGET          = applesmc.efi
-OBJS            = main.o smc_protocol.o fan_control.o ui_menu.o utils.o
+OBJS            = main.o smc_protocol.o fan_control.o temp_sensors.o ui_menu.o utils.o
 
 CC              = gcc
 LD              = ld

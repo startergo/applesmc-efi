@@ -6,13 +6,18 @@ A standalone UEFI application for controlling Apple SMC (System Management Contr
 
 - **Pre-boot Fan Control**: Control fans before OS loads
 - **Direct SMC Communication**: Low-level I/O port access to SMC hardware
+- **Three Operating Modes**:
+  - **Auto**: SMC firmware controls fan speed
+  - **Manual**: Fixed RPM set by user
+  - **Sensor-Based**: Automatic speed based on temperature readings
+- **Temperature Monitoring**: Read up to 68 temperature sensors
 - **Interactive Text UI**: Simple console-based interface
 - **Safety Features**:
   - Automatic RPM clamping to min/max limits
   - Auto-restore all fans to automatic mode on exit
   - Timeout protection for all SMC operations
-- **Real-time Monitoring**: Live fan speed display
-- **Per-fan Control**: Switch each fan between auto and manual modes independently
+- **Real-time Monitoring**: Live fan speed and temperature display
+- **Per-fan Control**: Independent mode and settings for each fan
 
 ## Hardware Requirements
 
@@ -133,19 +138,34 @@ Select:
 - **0-5**: Select a fan by index
 - **a**: Set selected fan to automatic mode (SMC firmware control)
 - **m**: Set selected fan to manual mode
-- **+**: Increase target RPM by 100 (only in manual mode)
-- **-**: Decrease target RPM by 100 (only in manual mode)
+- **s**: Set selected fan to sensor-based mode (temperature-controlled)
+- **+**: Increase RPM (manual) / Next sensor (sensor-based)
+- **-**: Decrease RPM (manual) / Previous sensor (sensor-based)
+- **<**: Lower minimum temperature threshold (sensor-based)
+- **>**: Raise maximum temperature threshold (sensor-based)
+- **t**: View all temperature sensors
 - **r**: Refresh fan data from hardware
 - **q**: Quit and restore all fans to automatic mode
 
 ### Workflow Example
 
+**Manual Mode:**
 1. Press `2` to select EXHAUST fan
 2. Press `m` to switch to manual mode
 3. Press `+` several times to increase RPM
 4. Press `-` to decrease RPM
 5. Press `a` to return to automatic mode
 6. Press `q` to quit
+
+**Sensor-Based Mode:**
+1. Press `4` to select BOOSTA fan
+2. Press `s` to enable sensor-based mode
+3. Press `+`/`-` to select temperature sensor (e.g., CPU A Core)
+4. Press `<` to lower min temperature (e.g., 40°C)
+5. Press `>` to raise max temperature (e.g., 80°C)
+6. Fan speed will automatically adjust based on sensor temperature
+7. Press `t` to view all available temperature sensors
+8. Press `a` to return to automatic mode
 
 ## Safety Features
 
@@ -164,6 +184,45 @@ When you quit the application (press `q`), **all fans are automatically restored
 ### Timeout Protection
 
 All SMC I/O operations have 100ms timeouts to prevent infinite loops if the hardware hangs.
+
+## Sensor-Based Mode
+
+### How It Works
+
+Sensor-based mode automatically adjusts fan speed based on a selected temperature sensor using linear interpolation:
+
+1. **Select Sensor**: Choose from available temperature sensors (CPU, GPU, drives, etc.)
+2. **Set Thresholds**: Define minimum and maximum temperature thresholds
+3. **Automatic Adjustment**: Fan speed scales linearly between min RPM (at min temp) and max RPM (at max temp)
+
+**Example:**
+- Fan: BOOSTA (800-5200 RPM)
+- Sensor: CPU A Core (TCAC)
+- Min Temp: 40°C → Fan runs at 800 RPM
+- Max Temp: 80°C → Fan runs at 5200 RPM
+- Current Temp: 60°C → Fan runs at ~3000 RPM (50% between min and max)
+
+### Temperature Calculation
+
+The application uses **linear interpolation**:
+
+```
+temp_ratio = (current_temp - min_temp) / (max_temp - min_temp)
+target_rpm = min_rpm + (temp_ratio × (max_rpm - min_rpm))
+```
+
+### Available Sensors
+
+Temperature sensors include (if present on hardware):
+- **CPU**: Core temperatures, diode, heatsink, SRAM
+- **GPU**: Diode, proximity sensors
+- **Drives**: Bay 0-3 temperatures
+- **Memory**: DIMM proximity sensors (1-8)
+- **Chipset**: IOH (Northbridge) diode and heatsink
+- **Power**: AC/DC supply temperatures
+- **Ambient**: Overall system temperature
+
+Press `t` in the application to view all detected sensors with current readings.
 
 ## Technical Details
 
@@ -187,12 +246,21 @@ Fan control keys follow the pattern `F[0-5][Ac|Mn|Mx|Md|Tg]`:
 - `F0Md` - Fan 0 mode: 0=auto, 1=manual (read/write)
 - `F0Tg` - Fan 0 target RPM (write in manual mode)
 
-### fpe2 Encoding
+### fpe2 Encoding (Fan Speeds)
 
 RPM values are stored in fpe2 (fixed-point encoding, 2 decimal places):
 - Encode: `value = rpm << 2`
 - Decode: `rpm = value >> 2`
 - Format: 2 bytes, big-endian
+
+### sp78 Encoding (Temperature)
+
+Temperature values are stored in sp78 (signed fixed-point, 7.8 bits):
+- Formula: `temp_celsius = value / 256.0`
+- Format: 2 bytes, signed integer
+- Decidegrees: `temp_decidegrees = (value * 10) / 256`
+
+Example: Value `0x1E00` = 7680 → 30.0°C
 
 ## Project Structure
 
@@ -205,6 +273,7 @@ applesmc-efi/
 │   ├── main.c              # Application entry point
 │   ├── smc_protocol.c/h    # SMC I/O protocol
 │   ├── fan_control.c/h     # Fan control logic
+│   ├── temp_sensors.c/h    # Temperature sensor reading
 │   ├── ui_menu.c/h         # Interactive UI
 │   └── utils.c/h           # Utilities
 ├── test/
