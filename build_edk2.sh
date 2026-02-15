@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-EDK2_PATH="${EDK2_PATH:-/home/macpro/edk2}"
+EDK2_PATH="${EDK2_PATH:-$HOME/edk2}"
 PROJECT_PATH="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_NAME="ApplesSmcEfiPkg"
 
@@ -21,11 +21,14 @@ if [ ! -d "$EDK2_PATH" ]; then
     echo "Error: EDK2 not found at $EDK2_PATH"
     echo ""
     echo "To install EDK2:"
-    echo "  cd /home/macpro"
+    echo "  cd ~"
     echo "  git clone https://github.com/tianocore/edk2.git"
     echo "  cd edk2"
     echo "  git submodule update --init"
     echo "  make -C BaseTools"
+    echo ""
+    echo "Or set EDK2_PATH environment variable:"
+    echo "  export EDK2_PATH=/path/to/your/edk2"
     echo ""
     exit 1
 fi

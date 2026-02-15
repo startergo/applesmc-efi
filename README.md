@@ -55,7 +55,7 @@ This project supports two build systems:
 sudo pacman -S gnu-efi
 
 # Clone this repository
-cd /home/macpro
+cd ~
 git clone <repository-url> applesmc-efi
 cd applesmc-efi
 

@@ -8,7 +8,7 @@ This document describes how to build the Apple SMC Fan Control application using
 
 ```bash
 # Clone EDK2 repository
-cd /home/macpro
+cd ~
 git clone https://github.com/tianocore/edk2.git
 cd edk2
 git submodule update --init
@@ -36,8 +36,8 @@ sudo apt-get install build-essential nasm iasl python3
 
 ```bash
 # Create symbolic link in EDK2 workspace
-cd /home/macpro/edk2
-ln -s /home/macpro/applesmc-efi ApplesSmcEfiPkg
+cd ~/edk2
+ln -s ~/applesmc-efi ApplesSmcEfiPkg
 
 # Edit Conf/target.txt to set:
 #   ACTIVE_PLATFORM = ApplesSmcEfiPkg/ApplesSmcEfi.dsc
@@ -86,8 +86,8 @@ Create a standalone build script `build_edk2.sh`:
 #!/bin/bash
 set -e
 
-EDK2_PATH="/home/macpro/edk2"
-PROJECT_PATH="/home/macpro/applesmc-efi"
+EDK2_PATH="~/edk2"
+PROJECT_PATH="~/applesmc-efi"
 
 # Source EDK2 environment
 cd $EDK2_PATH
@@ -120,7 +120,7 @@ echo "Output: $PROJECT_PATH/ApplesSmcEfi.efi"
 ### Using EDK2 Build Command
 
 ```bash
-cd /home/macpro/edk2
+cd ~/edk2
 source edksetup.sh
 
 # Debug build
@@ -133,7 +133,7 @@ build -a X64 -t GCC5 -p ApplesSmcEfiPkg/ApplesSmcEfi.dsc -b RELEASE
 ### Using Standalone Script
 
 ```bash
-cd /home/macpro/applesmc-efi
+cd ~/applesmc-efi
 chmod +x build_edk2.sh
 ./build_edk2.sh
 ```
@@ -142,7 +142,7 @@ chmod +x build_edk2.sh
 
 EDK2 build output will be located at:
 ```
-/home/macpro/edk2/Build/ApplesSmcEfi/RELEASE_GCC5/X64/ApplesSmcEfi.efi
+~/edk2/Build/ApplesSmcEfi/RELEASE_GCC5/X64/ApplesSmcEfi.efi
 ```
 
 ## Differences from gnu-efi Build
