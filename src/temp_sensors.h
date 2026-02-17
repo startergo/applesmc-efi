@@ -12,7 +12,7 @@
 #endif
 
 // Maximum number of temperature sensors
-#define MAX_TEMP_SENSORS 68
+#define MAX_TEMP_SENSORS 128
 
 // Temperature sensor information structure
 typedef struct {

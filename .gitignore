@@ -19,3 +19,4 @@ test_env/
 
 # OS files
 .DS_Store
+.claude-helper.log
