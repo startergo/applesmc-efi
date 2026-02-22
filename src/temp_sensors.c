@@ -3,8 +3,9 @@
 #include "utils.h"
 
 // Known temperature sensor keys and their descriptions
-// Based on comprehensive Intel SMC sensor database (2006-2020 Intel Macs)
-// Reference: https://gist.github.com/startergo/edfe8c7e3af409971e397b8562155ff2
+// Based on comprehensive Intel/T2 SMC sensor database (2006-2020 Intel Macs, 2018-2019 T2 Macs)
+// Sources: macsfancontrol-qt sensordescriptions.cpp, smc_sensor_models_reference.md
+// T2 models: Macmini8,1 / MacPro7,1 / MacBookPro15,x+ / MacBookAir8,x+
 static const struct {
     const CHAR8 *key;
     const CHAR16 *description;
@@ -13,15 +14,20 @@ static const struct {
     {"TA0P", L"Ambient Front"},
     {"TA1P", L"Ambient Rear"},
     {"TA2P", L"Ambient Internal"},
+    {"TA3P", L"Ambient Internal 2"},
+    {"TA4P", L"Ambient Plenum"},
+    {"TA0V", L"Ambient Air"},
     {"TA0S", L"Ambient Sensor"},
     {"TA0D", L"Ambient Diode"},
     {"TA0E", L"Ambient Enclosure"},
     {"TA0T", L"Ambient Top"},
+    {"TaLC", L"Ambient Left C"},
+    {"TaRC", L"Ambient Right C"},
     {"Tals", L"Ambient Left Side"},
     {"Tars", L"Ambient Right Side"},
     {"Tarl", L"Ambient Rear Left"},
 
-    // CPU Cores (Intel - up to 12 cores for Mac Pro)
+    // CPU Cores (Intel - up to 28 cores for Mac Pro 7,1)
     {"TC0C", L"CPU Core 0"},
     {"TC1C", L"CPU Core 1"},
     {"TC2C", L"CPU Core 2"},
@@ -34,17 +40,33 @@ static const struct {
     {"TC9C", L"CPU Core 9"},
     {"TC10C", L"CPU Core 10"},
     {"TC11C", L"CPU Core 11"},
+    {"TC12C", L"CPU Core 12"},
+    {"TC13C", L"CPU Core 13"},
+    {"TC14C", L"CPU Core 14"},
+    {"TC15C", L"CPU Core 15"},
+    {"TC16C", L"CPU Core 16"},
+    {"TC17C", L"CPU Core 17"},
+    {"TC18C", L"CPU Core 18"},
+    {"TC19C", L"CPU Core 19"},
+    {"TC20C", L"CPU Core 20"},
+    {"TC21C", L"CPU Core 21"},
+    {"TC22C", L"CPU Core 22"},
+    {"TC23C", L"CPU Core 23"},
+    {"TC24C", L"CPU Core 24"},
+    {"TC25C", L"CPU Core 25"},
+    {"TC26C", L"CPU Core 26"},
+    {"TC27C", L"CPU Core 27"},
 
     // CPU Thermal
     {"TC0D", L"CPU Diode"},
     {"TC1D", L"CPU Diode 2"},
-    {"TC0E", L"CPU Heatsink"},
-    {"TC0F", L"CPU Proximity"},
+    {"TC0E", L"CPU Core Average"},
+    {"TC0F", L"CPU Core Max"},
     {"TC0H", L"CPU Hot Spot"},
-    {"TC0P", L"CPU Package"},
+    {"TC0P", L"CPU Proximity"},
     {"TC0G", L"CPU Integrated GPU"},
 
-    // CPU Clusters (Mac Pro dual-socket / Apple Silicon)
+    // CPU Clusters (Mac Pro dual-socket)
     {"TCAC", L"CPU A Core (PECI)"},
     {"TCAD", L"CPU A Diode"},
     {"TCAG", L"CPU A GPU"},
@@ -55,22 +77,40 @@ static const struct {
     {"TCBG", L"CPU B GPU"},
     {"TCBH", L"CPU B Heatsink"},
     {"TCBS", L"CPU B SRAM"},
-    {"TCGC", L"CPU Graphics Cluster"},
-    {"TCGc", L"CPU Graphics Cluster 2"},
+    {"TCGC", L"CPU GPU PECI"},
+    {"TCGc", L"CPU GPU PECI 2"},
     {"TCSC", L"CPU System Cluster"},
     {"TCCD", L"CPU Cross-Domain"},
 
-    // GPU (single and dual)
+    // T2 Mac CPU sensors (Macmini8,1 / MacPro7,1 / MacBookPro15+ / MacBookAir8+)
+    {"TCSA", L"CPU System Agent"},
+    {"TCXC", L"CPU PECI Cross Domain"},
+    {"TCaP", L"CPU Package"},
+    {"TIED", L"Intel Embedded Device"},
+
+    // GPU (up to 6 cards on Mac Pro 7,1)
     {"TG0D", L"GPU 0 Diode"},
     {"TG1D", L"GPU 1 Diode"},
+    {"TG2D", L"GPU 2 Diode"},
+    {"TG3D", L"GPU 3 Diode"},
+    {"TG4D", L"GPU 4 Diode"},
+    {"TG5D", L"GPU 5 Diode"},
     {"TG0P", L"GPU 0 Proximity"},
     {"TG1P", L"GPU 1 Proximity"},
+    {"TG2P", L"GPU 2 Proximity"},
+    {"TG3P", L"GPU 3 Proximity"},
+    {"TG4P", L"GPU 4 Proximity"},
+    {"TG5P", L"GPU 5 Proximity"},
     {"TG0C", L"GPU 0 Core"},
     {"TG1C", L"GPU 1 Core"},
     {"TG0S", L"GPU 0 Sensor"},
     {"TG1S", L"GPU 1 Sensor"},
     {"TG0T", L"GPU 0 Die"},
     {"TG1T", L"GPU 1 Die"},
+    {"TG2T", L"GPU 2 Die"},
+    {"TG3T", L"GPU 3 Die"},
+    {"TG4T", L"GPU 4 Die"},
+    {"TG5T", L"GPU 5 Die"},
     {"TG0G", L"GPU 0 Graphics"},
     {"TG0H", L"GPU Heatsink"},
     {"TGDD", L"GPU Desktop Discrete"},
@@ -103,10 +143,19 @@ static const struct {
     {"TM6P", L"DIMM Proximity 6"},
     {"TM7P", L"DIMM Proximity 7"},
     {"TM8P", L"DIMM Proximity 8"},
+    {"TM0V", L"Memory Virtual"},
     {"TM0S", L"Memory Slot 0"},
     {"TM1S", L"Memory Slot 1"},
-    {"TM8S", L"Memory Slot 2"},
-    {"TM9S", L"Memory Slot 3"},
+    {"TM2S", L"Memory Slot 2"},
+    {"TM3S", L"Memory Slot 3"},
+    {"TM4S", L"Memory Slot 4"},
+    {"TM5S", L"Memory Slot 5"},
+    {"TM6S", L"Memory Slot 6"},
+    {"TM7S", L"Memory Slot 7"},
+    {"TM8S", L"Memory Slot 8"},
+    {"TM9S", L"Memory Slot 9"},
+    {"TM10S", L"Memory Slot 10"},
+    {"TM11S", L"Memory Slot 11"},
 
     // Memory - Banks (Mac Pro)
     {"TMA1", L"Memory Bank A1"},
@@ -123,7 +172,7 @@ static const struct {
     {"TMPV", L"Memory PVDD"},
     {"TMTG", L"Memory Thermal Group"},
 
-    // Drive Bays (Mac Pro)
+    // Storage - Drive Bays (Mac Pro 4,1/5,1/6,1)
     {"TH1P", L"Drive Bay 0"},
     {"TH2P", L"Drive Bay 1"},
     {"TH3P", L"Drive Bay 2"},
@@ -141,10 +190,19 @@ static const struct {
     {"TH4F", L"Drive Bay 4 Front"},
     {"TH4V", L"Drive Bay 4 SATA"},
     {"TH0P", L"HDD Proximity"},
+    {"TH0A", L"HDD A"},
+    {"TH0B", L"HDD B"},
+    {"TH0C", L"HDD C"},
     {"Th0H", L"Drive Thermal"},
     {"Th1H", L"Heatpipe 1"},
     {"Th2H", L"Heatpipe 2"},
     {"THPS", L"HDD Power Supply"},
+
+    // Storage - NVMe via T2 (Macmini8,1 / MacPro7,1 / MacBookPro15+ / MacBookAir8+)
+    {"TH0F", L"NVMe Front"},
+    {"TH0a", L"NVMe a"},
+    {"TH0b", L"NVMe b"},
+    {"TS0V", L"SSD Virtual"},
 
     // PCIe Slots (Mac Pro - 5 slots)
     {"Te1P", L"PCIe Ambient"},
@@ -167,8 +225,13 @@ static const struct {
     {"TN1P", L"Northbridge 2"},
     {"TNTG", L"Northbridge Thermal Group"},
     {"TPCD", L"PCH Die"},
+    {"TPSD", L"PCH SD"},
 
-    // Battery (MacBook Pro)
+    // Thunderbolt (T2 Macs)
+    {"TTTD", L"Thunderbolt TD"},
+    {"TTXD", L"Thunderbolt XD"},
+
+    // Battery (MacBook Pro / Air)
     {"TB0T", L"Battery 0"},
     {"TB1T", L"Battery 1"},
     {"TB2T", L"Battery 2"},
@@ -194,6 +257,7 @@ static const struct {
     {"Tp1P", L"Power Supply Proximity 2"},
     {"TpPS", L"Power Supply Sensor"},
     {"TpTG", L"Power Supply Thermal Group"},
+    {"TPMP", L"Power Supply Proximity Alt"},
     {"TV0R", L"Voltage Regulator"},
 
     // Thermal Groups (Mac Pro)
@@ -201,6 +265,8 @@ static const struct {
 
     // Wireless
     {"TW0P", L"Wireless Module"},
+    {"TW1P", L"Wireless Module 2"},
+    {"TW2P", L"Wireless Module 3"},
     {"TW0S", L"Wireless Sensor"},
     {"TWAP", L"Wireless Alt"},
 
@@ -215,6 +281,8 @@ static const struct {
     {"Te1T", L"Enclosure Bottom 1"},
     {"Te2T", L"Enclosure Bottom 2"},
     {"Te3T", L"Enclosure Bottom 3"},
+    {"Te4T", L"Enclosure Bottom 4"},
+    {"Te5T", L"Enclosure Bottom 5"},
 
     // Thermal Diodes
     {"TD0P", L"Thermal Diode 0"},
